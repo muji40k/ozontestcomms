@@ -6,65 +6,302 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/muji40k/ozontestcomms/graphql/graph/dataloader"
+	"github.com/muji40k/ozontestcomms/graphql/graph/mappers"
 	"github.com/muji40k/ozontestcomms/graphql/graph/model"
+	"github.com/muji40k/ozontestcomms/graphql/graph/pagination"
+	"github.com/muji40k/ozontestcomms/internal/domain/models"
+	"github.com/muji40k/ozontestcomms/internal/repository/collection"
+	"github.com/muji40k/ozontestcomms/internal/service/helpers/singlewrap"
+	"github.com/muji40k/ozontestcomms/misc/result"
 )
 
 // Author is the resolver for the author field.
-func (r *commentResolver) Author(ctx context.Context, obj *model.Comment) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Author - author"))
+func (r *commentResolver) Author(
+	ctx context.Context,
+	obj *model.Comment,
+) (*model.User, error) {
+	if loader, found := dataloader.For(ctx); found {
+		return loader.User.Load(ctx, obj.AuthorId)
+	} else {
+		res, err := singlewrap.Unwrap(
+			r.services.user.GetUsersById(ctx, obj.AuthorId),
+		)
+
+		if nil != err {
+			return nil, err
+		} else {
+			r := result.Map(&res, mappers.MapUser)
+			return r.Unwrap()
+		}
+	}
 }
 
 // Comments is the resolver for the comments field.
-func (r *commentResolver) Comments(ctx context.Context, obj *model.Comment, after *uuid.UUID, limit int32, order *model.CommentOrder) (*model.CommentCursor, error) {
-	panic(fmt.Errorf("not implemented: Comments - comments"))
+func (r *commentResolver) Comments(
+	ctx context.Context,
+	obj *model.Comment,
+	after *uuid.UUID,
+	limit int32,
+	order *model.CommentOrder,
+) (*model.CommentCursor, error) {
+	var out *model.CommentCursor
+	col, err := r.services.comment.GetCommentsByCommentId(
+		ctx,
+		obj.ID,
+		mappers.UnmapCommentOrder(order),
+	)
+
+	if nil == err {
+		err = pagination.Apply(col, after, limit)
+	}
+
+	if nil == err {
+		out = new(model.CommentCursor)
+		out.Data, err = pagination.Collect(collection.Map(col,
+			func(v *result.Result[models.Comment]) result.Result[*model.Comment] {
+				return result.Map(v, mappers.MapComment)
+			},
+		))
+	}
+
+	if nil == err {
+		if l := len(out.Data); 0 != l {
+			out.EndID = &out.Data[l-1].ID
+		}
+	}
+
+	if nil != err {
+		out = nil
+	}
+
+	return out, err
 }
 
 // CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, userID uuid.UUID, input model.CreatePostInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+func (r *mutationResolver) CreatePost(
+	ctx context.Context,
+	userID uuid.UUID,
+	input model.CreatePostInput,
+) (*model.Post, error) {
+	post, err := r.services.post.CreatePost(
+		ctx,
+		userID,
+		mappers.UnmapCreatePostInput(&input),
+	)
+
+	if nil == err {
+		return mappers.MapPost(&post), nil
+	} else {
+		return nil, err
+	}
 }
 
 // ModifyPost is the resolver for the modifyPost field.
-func (r *mutationResolver) ModifyPost(ctx context.Context, userID uuid.UUID, postID uuid.UUID, input model.PostModificationInput) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: ModifyPost - modifyPost"))
+func (r *mutationResolver) ModifyPost(
+	ctx context.Context,
+	userID uuid.UUID,
+	postID uuid.UUID,
+	input model.PostModificationInput,
+) (*model.Post, error) {
+	var post models.Post
+	res, err := singlewrap.Unwrap(r.services.post.GetPostsById(ctx, postID))
+
+	if nil == err {
+		if v, cerr := res.Unwrap(); nil == cerr {
+			post = v
+		} else {
+			err = cerr
+		}
+	}
+
+	if nil == err {
+		mappers.ApplyPostModificationInput(&post, &input)
+		post, err = r.services.post.UpdatePost(ctx, userID, post)
+	}
+
+	if nil == err {
+		return mappers.MapPost(&post), nil
+	} else {
+		return nil, err
+	}
 }
 
 // CommentPost is the resolver for the commentPost field.
-func (r *mutationResolver) CommentPost(ctx context.Context, userID uuid.UUID, postID uuid.UUID, input model.CommentInput) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CommentPost - commentPost"))
+func (r *mutationResolver) CommentPost(
+	ctx context.Context,
+	userID uuid.UUID,
+	postID uuid.UUID,
+	input model.CommentInput,
+) (*model.Comment, error) {
+	comm, err := r.services.comment.CreatePostComment(
+		ctx,
+		userID,
+		postID,
+		mappers.UnmapCommentInput(&input),
+	)
+
+	if nil == err {
+		return mappers.MapComment(&comm), nil
+	} else {
+		return nil, err
+	}
 }
 
 // CommentComment is the resolver for the commentComment field.
-func (r *mutationResolver) CommentComment(ctx context.Context, userID uuid.UUID, commentID uuid.UUID, input model.CommentInput) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: CommentComment - commentComment"))
+func (r *mutationResolver) CommentComment(
+	ctx context.Context,
+	userID uuid.UUID,
+	commentID uuid.UUID,
+	input model.CommentInput,
+) (*model.Comment, error) {
+	comm, err := r.services.comment.CreateCommentComment(
+		ctx,
+		userID,
+		commentID,
+		mappers.UnmapCommentInput(&input),
+	)
+
+	if nil == err {
+		return mappers.MapComment(&comm), nil
+	} else {
+		return nil, err
+	}
 }
 
 // Author is the resolver for the author field.
-func (r *postResolver) Author(ctx context.Context, obj *model.Post) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: Author - author"))
+func (r *postResolver) Author(
+	ctx context.Context,
+	obj *model.Post,
+) (*model.User, error) {
+	if loader, found := dataloader.For(ctx); found {
+		return loader.User.Load(ctx, obj.AuthorId)
+	} else {
+		res, err := singlewrap.Unwrap(
+			r.services.user.GetUsersById(ctx, obj.AuthorId),
+		)
+
+		if nil != err {
+			return nil, err
+		} else {
+			r := result.Map(&res, mappers.MapUser)
+			return r.Unwrap()
+		}
+	}
 }
 
 // Comments is the resolver for the comments field.
-func (r *postResolver) Comments(ctx context.Context, obj *model.Post, after *uuid.UUID, limit int32, order *model.CommentOrder) (*model.CommentCursor, error) {
-	panic(fmt.Errorf("not implemented: Comments - comments"))
+func (r *postResolver) Comments(
+	ctx context.Context,
+	obj *model.Post,
+	after *uuid.UUID,
+	limit int32,
+	order *model.CommentOrder,
+) (*model.CommentCursor, error) {
+	var out *model.CommentCursor
+	col, err := r.services.comment.GetCommentsByPostId(
+		ctx,
+		obj.ID,
+		mappers.UnmapCommentOrder(order),
+	)
+
+	if nil == err {
+		err = pagination.Apply(col, after, limit)
+	}
+
+	if nil == err {
+		out = new(model.CommentCursor)
+		out.Data, err = pagination.Collect(collection.Map(col,
+			func(v *result.Result[models.Comment]) result.Result[*model.Comment] {
+				return result.Map(v, mappers.MapComment)
+			},
+		))
+	}
+
+	if nil == err {
+		if l := len(out.Data); 0 != l {
+			out.EndID = &out.Data[l-1].ID
+		}
+	}
+
+	if nil != err {
+		out = nil
+	}
+
+	return out, err
 }
 
 // Post is the resolver for the post field.
-func (r *queryResolver) Post(ctx context.Context, id uuid.UUID) (*model.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+func (r *queryResolver) Post(
+	ctx context.Context,
+	id uuid.UUID,
+) (*model.Post, error) {
+	res, err := singlewrap.Unwrap(r.services.post.GetPostsById(ctx, id))
+
+	if nil != err {
+		return nil, err
+	} else if v, cerr := res.Unwrap(); nil == cerr {
+		return mappers.MapPost(&v), nil
+	} else {
+		return nil, cerr
+	}
 }
 
 // Comment is the resolver for the comment field.
-func (r *queryResolver) Comment(ctx context.Context, id uuid.UUID) (*model.Comment, error) {
-	panic(fmt.Errorf("not implemented: Comment - comment"))
+func (r *queryResolver) Comment(
+	ctx context.Context,
+	id uuid.UUID,
+) (*model.Comment, error) {
+	res, err := singlewrap.Unwrap(r.services.comment.GetCommentsById(ctx, id))
+
+	if nil != err {
+		return nil, err
+	} else if v, cerr := res.Unwrap(); nil == cerr {
+		return mappers.MapComment(&v), nil
+	} else {
+		return nil, cerr
+	}
 }
 
 // Posts is the resolver for the posts field.
-func (r *queryResolver) Posts(ctx context.Context, after *uuid.UUID, limit int32, order *model.PostOrder) (*model.PostCursor, error) {
-	panic(fmt.Errorf("not implemented: Posts - posts"))
+func (r *queryResolver) Posts(
+	ctx context.Context,
+	after *uuid.UUID,
+	limit int32,
+	order *model.PostOrder,
+) (*model.PostCursor, error) {
+	var out *model.PostCursor
+	col, err := r.services.post.GetPosts(
+		ctx,
+		mappers.UnmapPostOrder(order),
+	)
+
+	if nil == err {
+		err = pagination.Apply(col, after, limit)
+	}
+
+	if nil == err {
+		out = new(model.PostCursor)
+		out.Data, err = pagination.Collect(collection.Map(col,
+			func(v *result.Result[models.Post]) result.Result[*model.Post] {
+				return result.Map(v, mappers.MapPost)
+			},
+		))
+	}
+
+	if nil == err {
+		if l := len(out.Data); 0 != l {
+			out.EndID = &out.Data[l-1].ID
+		}
+	}
+
+	if nil != err {
+		out = nil
+	}
+
+	return out, err
 }
 
 // Comment returns CommentResolver implementation.
@@ -83,3 +320,4 @@ type commentResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type postResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+

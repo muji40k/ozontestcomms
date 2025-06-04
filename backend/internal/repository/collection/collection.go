@@ -6,8 +6,8 @@ import (
 )
 
 type Collection[T any] interface {
-	After(id uuid.UUID) Collection[T]
-	Limit(n uint) Collection[T]
+	After(id uuid.UUID) error
+	Limit(n uint)
 	Get() (iterator.Iterator[T], error)
 }
 

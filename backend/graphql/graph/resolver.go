@@ -6,5 +6,27 @@ package graph
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-type Resolver struct{}
+import (
+	commsrv "github.com/muji40k/ozontestcomms/internal/service/interface/comment"
+	postsrv "github.com/muji40k/ozontestcomms/internal/service/interface/post"
+	usrsrv "github.com/muji40k/ozontestcomms/internal/service/interface/user"
+)
+
+type services struct {
+	user    usrsrv.Service
+	comment commsrv.Service
+	post    postsrv.Service
+}
+
+type Resolver struct {
+	services services
+}
+
+func New(
+	user usrsrv.Service,
+	comment commsrv.Service,
+	post postsrv.Service,
+) Resolver {
+	return Resolver{services{user, comment, post}}
+}
 

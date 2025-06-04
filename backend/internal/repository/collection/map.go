@@ -22,13 +22,11 @@ func (self *mapCollection[T, F]) Get() (iterator.Iterator[F], error) {
 	}
 }
 
-func (self *mapCollection[T, F]) Limit(n uint) Collection[F] {
-	self.col = self.col.Limit(n)
-	return self
+func (self *mapCollection[T, F]) Limit(n uint) {
+	self.col.Limit(n)
 }
 
-func (self *mapCollection[T, F]) After(id uuid.UUID) Collection[F] {
-	self.col = self.col.After(id)
-	return self
+func (self *mapCollection[T, F]) After(id uuid.UUID) error {
+	return self.col.After(id)
 }
 

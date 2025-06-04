@@ -10,6 +10,8 @@ type ErrorIncorrect struct{ What []string }
 type ErrorNotFound struct{ What []string }
 type ErrorDataAccess struct{ Err error }
 type ErrorUnknown struct{ What []string }
+type ErrorIterEmpty struct{}
+type ErrorIterMultiple struct{}
 
 // Creators
 func Authentication(err error) ErrorAuthentication {
@@ -42,6 +44,14 @@ func DataAccess(err error) ErrorDataAccess {
 
 func Unknown(what ...string) ErrorUnknown {
 	return ErrorUnknown{what}
+}
+
+func IterEmpty() ErrorIterEmpty {
+	return ErrorIterEmpty{}
+}
+
+func IterMultiple() ErrorIterMultiple {
+	return ErrorIterMultiple{}
 }
 
 // Error implementation
@@ -91,5 +101,13 @@ func (e ErrorDataAccess) Unwrap() error {
 
 func (e ErrorUnknown) Error() string {
 	return fmt.Sprintf("Unknown: %v", e.What)
+}
+
+func (e ErrorIterEmpty) Error() string {
+	return fmt.Sprintf("Got no instances from iterator")
+}
+
+func (e ErrorIterMultiple) Error() string {
+	return fmt.Sprintf("Got unexpected multiple instances from iterator")
 }
 

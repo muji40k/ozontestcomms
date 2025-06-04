@@ -12,6 +12,8 @@ import (
 
 type Service interface {
 	GetCommentsById(ctx context.Context, ids ...uuid.UUID) (collection.Collection[result.Result[models.Comment]], error)
+	GetCommentsByPostId(ctx context.Context, postId uuid.UUID, order CommentOrder) (collection.Collection[result.Result[models.Comment]], error)
+	GetCommentsByCommentId(ctx context.Context, commentId uuid.UUID, order CommentOrder) (collection.Collection[result.Result[models.Comment]], error)
 
 	CreatePostComment(ctx context.Context, userId uuid.UUID, postId uuid.UUID, form CommentForm) (models.Comment, error)
 	CreateCommentComment(ctx context.Context, userId uuid.UUID, commentID uuid.UUID, form CommentForm) (models.Comment, error)
