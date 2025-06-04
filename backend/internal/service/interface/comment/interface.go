@@ -1,0 +1,19 @@
+package comment
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+
+	"github.com/muji40k/ozontestcomms/internal/domain/models"
+	"github.com/muji40k/ozontestcomms/internal/repository/collection"
+	"github.com/muji40k/ozontestcomms/misc/result"
+)
+
+type Service interface {
+	GetCommentsById(ctx context.Context, ids ...uuid.UUID) (collection.Collection[result.Result[models.Comment]], error)
+
+	CreatePostComment(ctx context.Context, userId uuid.UUID, postId uuid.UUID, form CommentForm) (models.Comment, error)
+	CreateCommentComment(ctx context.Context, userId uuid.UUID, commentID uuid.UUID, form CommentForm) (models.Comment, error)
+}
+
