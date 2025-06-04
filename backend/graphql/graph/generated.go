@@ -89,7 +89,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Comment func(childComplexity int, id uuid.UUID) int
 		Post    func(childComplexity int, id uuid.UUID) int
-		Posts   func(childComplexity int, after *uuid.UUID, limit int32) int
+		Posts   func(childComplexity int, after *uuid.UUID, limit int32, order *model.PostOrder) int
 	}
 
 	User struct {
@@ -117,7 +117,7 @@ type PostResolver interface {
 type QueryResolver interface {
 	Post(ctx context.Context, id uuid.UUID) (*model.Post, error)
 	Comment(ctx context.Context, id uuid.UUID) (*model.Comment, error)
-	Posts(ctx context.Context, after *uuid.UUID, limit int32) (*model.PostCursor, error)
+	Posts(ctx context.Context, after *uuid.UUID, limit int32, order *model.PostOrder) (*model.PostCursor, error)
 }
 
 type executableSchema struct {
@@ -343,7 +343,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.Posts(childComplexity, args["after"].(*uuid.UUID), args["limit"].(int32)), true
+		return e.complexity.Query.Posts(childComplexity, args["after"].(*uuid.UUID), args["limit"].(int32), args["order"].(*model.PostOrder)), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -904,6 +904,11 @@ func (ec *executionContext) field_Query_posts_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["limit"] = arg1
+	arg2, err := ec.field_Query_posts_argsOrder(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["order"] = arg2
 	return args, nil
 }
 func (ec *executionContext) field_Query_posts_argsAfter(
@@ -929,6 +934,19 @@ func (ec *executionContext) field_Query_posts_argsLimit(
 	}
 
 	var zeroVal int32
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_posts_argsOrder(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*model.PostOrder, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("order"))
+	if tmp, ok := rawArgs["order"]; ok {
+		return ec.unmarshalOPostOrder2ᚖgithubᚗcomᚋmuji40kᚋozontestcommsᚋgraphqlᚋgraphᚋmodelᚐPostOrder(ctx, tmp)
+	}
+
+	var zeroVal *model.PostOrder
 	return zeroVal, nil
 }
 
@@ -2232,7 +2250,7 @@ func (ec *executionContext) _Query_posts(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Posts(rctx, fc.Args["after"].(*uuid.UUID), fc.Args["limit"].(int32))
+		return ec.resolvers.Query().Posts(rctx, fc.Args["after"].(*uuid.UUID), fc.Args["limit"].(int32), fc.Args["order"].(*model.PostOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6020,6 +6038,22 @@ func (ec *executionContext) unmarshalOCommentOrder2ᚖgithubᚗcomᚋmuji40kᚋo
 }
 
 func (ec *executionContext) marshalOCommentOrder2ᚖgithubᚗcomᚋmuji40kᚋozontestcommsᚋgraphqlᚋgraphᚋmodelᚐCommentOrder(ctx context.Context, sel ast.SelectionSet, v *model.CommentOrder) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) unmarshalOPostOrder2ᚖgithubᚗcomᚋmuji40kᚋozontestcommsᚋgraphqlᚋgraphᚋmodelᚐPostOrder(ctx context.Context, v any) (*model.PostOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(model.PostOrder)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOPostOrder2ᚖgithubᚗcomᚋmuji40kᚋozontestcommsᚋgraphqlᚋgraphᚋmodelᚐPostOrder(ctx context.Context, sel ast.SelectionSet, v *model.PostOrder) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

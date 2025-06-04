@@ -51,7 +51,7 @@ type PostCursor implements Cursor {
 type Query {
     post(id: UUID!): Post!
     comment(id: UUID!): Comment!
-    posts(after: UUID, limit: Int!): PostCursor!
+    posts(after: UUID, limit: Int!, order: PostOrder): PostCursor!
 }
 
 # input RegisterInput {

@@ -63,7 +63,7 @@ func (r *queryResolver) Comment(ctx context.Context, id uuid.UUID) (*model.Comme
 }
 
 // Posts is the resolver for the posts field.
-func (r *queryResolver) Posts(ctx context.Context, after *uuid.UUID, limit int32) (*model.PostCursor, error) {
+func (r *queryResolver) Posts(ctx context.Context, after *uuid.UUID, limit int32, order *model.PostOrder) (*model.PostCursor, error) {
 	panic(fmt.Errorf("not implemented: Posts - posts"))
 }
 
@@ -83,4 +83,3 @@ type commentResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type postResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
