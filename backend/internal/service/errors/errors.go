@@ -6,10 +6,8 @@ type ErrorAuthentication struct{ Err error }
 type ErrorAuthorization struct{ Err error }
 type ErrorInternal struct{ Err error }
 type ErrorEmpty struct{ What []string }
-type ErrorIncorrect struct{ What []string }
 type ErrorNotFound struct{ What []string }
 type ErrorDataAccess struct{ Err error }
-type ErrorUnknown struct{ What []string }
 type ErrorIterEmpty struct{}
 type ErrorIterMultiple struct{}
 
@@ -30,20 +28,12 @@ func Empty(what ...string) ErrorEmpty {
 	return ErrorEmpty{what}
 }
 
-func Incorrect(what ...string) ErrorIncorrect {
-	return ErrorIncorrect{what}
-}
-
 func NotFound(what ...string) ErrorNotFound {
 	return ErrorNotFound{what}
 }
 
 func DataAccess(err error) ErrorDataAccess {
 	return ErrorDataAccess{err}
-}
-
-func Unknown(what ...string) ErrorUnknown {
-	return ErrorUnknown{what}
 }
 
 func IterEmpty() ErrorIterEmpty {
@@ -83,10 +73,6 @@ func (e ErrorEmpty) Error() string {
 	return fmt.Sprintf("Following information can't be empty: %v", e.What)
 }
 
-func (e ErrorIncorrect) Error() string {
-	return fmt.Sprintf("Data format error: %v", e.What)
-}
-
 func (e ErrorNotFound) Error() string {
 	return fmt.Sprintf("Not found: %v", e.What)
 }
@@ -97,10 +83,6 @@ func (e ErrorDataAccess) Error() string {
 
 func (e ErrorDataAccess) Unwrap() error {
 	return e.Err
-}
-
-func (e ErrorUnknown) Error() string {
-	return fmt.Sprintf("Unknown: %v", e.What)
 }
 
 func (e ErrorIterEmpty) Error() string {
