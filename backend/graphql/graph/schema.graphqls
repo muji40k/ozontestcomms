@@ -1,0 +1,87 @@
+scalar Time
+scalar UUID
+
+type User {
+    id: UUID!
+    email: String!
+}
+
+enum PostOrder {
+    DATE_ASC
+    DATE_DESC
+}
+
+enum CommentOrder {
+    DATE_ASC
+    DATE_DESC
+}
+
+type Post {
+    id: UUID!
+    author: User!
+    title: String!
+    content: String!
+    comments_allowed: Boolean!
+    created_at: Time!
+    comments(after: UUID, limit: Int!, order: CommentOrder): CommentCursor!
+}
+
+type Comment {
+    id: UUID!
+    author: User!
+    content: String!
+    created_at: Time!
+    comments(after: UUID, limit: Int!, order: CommentOrder): CommentCursor!
+}
+
+interface Cursor {
+    end_id: UUID
+}
+
+type CommentCursor implements Cursor {
+    data: [Comment!]!
+    end_id: UUID
+}
+
+type PostCursor implements Cursor {
+    data: [Post!]!
+    end_id: UUID
+}
+
+type Query {
+    post(id: UUID!): Post!
+    comment(id: UUID!): Comment!
+    posts(after: UUID, limit: Int!): PostCursor!
+}
+
+# input RegisterInput {
+#     email: String!
+#     password: String!
+# }
+
+input CreatePostInput {
+    title: String!
+    content: String!
+    allow_comments: Boolean
+}
+
+input CommentInput {
+    content: String!
+}
+
+input PostModificationInput {
+    allow_comments: Boolean
+}
+
+type Mutation {
+    # login(email: String!, password: String!): String!
+    # register(input: RegisterInput!): User!
+
+    # Keep user_id until authentication
+    createPost(user_id: UUID!, input: CreatePostInput!): Post!
+    modifyPost(user_id: UUID!, post_id: UUID!, input: PostModificationInput!): Post!
+
+    commentPost(user_id: UUID!, post_id: UUID!, input: CommentInput!): Comment!
+    commentComment(user_id: UUID!, comment_id: UUID!, input: CommentInput!): Comment!
+}
+
