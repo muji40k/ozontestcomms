@@ -1,0 +1,15 @@
+
+services:
+  backend:
+    build:
+      context: ../backend/
+      dockerfile: ./Dockerfile
+    restart: always
+    environment:
+      POSTER_REPOSITORY_TYPE: ${POSTER_REPOSITORY_TYPE}
+      POSTER_APPLICATION_TYPE: ${POSTER_APPLICATION_TYPE}
+    ports:
+      - "${HOST}:${PORT}:80"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+
