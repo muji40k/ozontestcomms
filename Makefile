@@ -11,6 +11,6 @@ default: backend
 .PHONY: backend
 backend:
 	docker compose --env-file=.env -f docker/docker-compose.yml build $(BACKEND_BUILD_FLAGS)
-	-docker compose --env-file=.env -f docker/docker-compose.yml up backend
+	-docker compose --env-file=.env -f docker/docker-compose.yml up postgresql_db backend
 	docker compose --env-file=.env -f docker/docker-compose.yml down
 

@@ -5,6 +5,10 @@ services:
       context: ../backend/
       dockerfile: ./Dockerfile
     restart: always
+    depends_on:
+      postgresql_db:
+        condition: service_healthy
+        restart: true
     environment:
       POSTER_REPOSITORY_TYPE: ${POSTER_REPOSITORY_TYPE}
       POSTER_APPLICATION_TYPE: ${POSTER_APPLICATION_TYPE}
@@ -12,4 +16,27 @@ services:
       - "${HOST}:${PORT}:80"
     volumes:
       - /etc/localtime:/etc/localtime:ro
+
+  postgresql_db:
+    build:
+      context: ../psql/.
+      dockerfile: ./Dockerfile
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      PGPORT: 5432
+    volumes:
+      - database-volume:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: 'pg_isready -U postgres --dbname=poster'
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  database-volume:
 
