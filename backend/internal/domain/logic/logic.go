@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -101,6 +102,17 @@ func (self *Logic) CreatePostComment(
 	_, err := mapRepoError(self.user.GetUsersById(ctx, userId))
 
 	if nil == err {
+		if "" == form.Content {
+			err = srverrors.Empty("comment.content")
+		} else if models.COMMENT_CONTENT_LENGTH_LIMIT < len(form.Content) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"comment.content exceeded max length [%v]",
+				models.COMMENT_CONTENT_LENGTH_LIMIT,
+			))
+		}
+	}
+
+	if nil == err {
 		out = models.Comment{
 			AuthorId:     userId,
 			TargetId:     postId,
@@ -125,6 +137,11 @@ func (self *Logic) CreateCommentComment(
 	if nil == err {
 		if "" == form.Content {
 			err = srverrors.Empty("comment.content")
+		} else if models.COMMENT_CONTENT_LENGTH_LIMIT < len(form.Content) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"comment.content exceeded max length [%v]",
+				models.COMMENT_CONTENT_LENGTH_LIMIT,
+			))
 		}
 	}
 
@@ -168,6 +185,16 @@ func (self *Logic) CreatePost(
 			err = srverrors.Empty("post.content")
 		} else if "" == form.Title {
 			err = srverrors.Empty("post.title")
+		} else if models.POST_CONTENT_LENGTH_LIMIT < len(form.Content) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"post.content exceeded max length [%v]",
+				models.POST_CONTENT_LENGTH_LIMIT,
+			))
+		} else if models.POST_TITLE_LENGTH_LIMIT < len(form.Title) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"post.title exceeded max length [%v]",
+				models.POST_TITLE_LENGTH_LIMIT,
+			))
 		}
 	}
 
@@ -196,6 +223,24 @@ func (self *Logic) UpdatePost(
 
 	if nil == err && userId != post.AuthorId {
 		err = srverrors.Authorization(errors.New("Naive authorization"))
+	}
+
+	if nil == err {
+		if "" == post.Content {
+			err = srverrors.Empty("post.content")
+		} else if "" == post.Title {
+			err = srverrors.Empty("post.title")
+		} else if models.POST_CONTENT_LENGTH_LIMIT < len(post.Content) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"post.content exceeded max length [%v]",
+				models.POST_CONTENT_LENGTH_LIMIT,
+			))
+		} else if models.POST_TITLE_LENGTH_LIMIT < len(post.Title) {
+			err = srverrors.Incorrect(fmt.Sprintf(
+				"post.title exceeded max length [%v]",
+				models.POST_TITLE_LENGTH_LIMIT,
+			))
+		}
 	}
 
 	if nil == err {
