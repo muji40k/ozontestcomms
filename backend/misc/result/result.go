@@ -46,3 +46,11 @@ func MapError[T any](self *Result[T], mapf func(error) error) Result[T] {
 	}
 }
 
+func Then[T any, F any](self *Result[T], mapf func(*T) Result[F]) Result[F] {
+	if nil != self.Error {
+		return Err[F](self.Error)
+	} else {
+		return mapf(&self.Value)
+	}
+}
+
