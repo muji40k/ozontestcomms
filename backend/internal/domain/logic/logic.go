@@ -19,10 +19,18 @@ import (
 	"github.com/muji40k/ozontestcomms/misc/result"
 )
 
+type Context struct {
+	Comment commrepo.Repository
+	Post    postrepo.Repository
+	User    usrrepo.Repository
+}
+
 type Logic struct {
-	comment commrepo.Repository
-	post    postrepo.Repository
-	user    usrrepo.Repository
+	Context
+}
+
+func New(context Context) *Logic {
+	return &Logic{context}
 }
 
 func mapRepoError[T any](v T, err error) (T, error) {
@@ -61,7 +69,7 @@ func (self *Logic) GetCommentsById(
 	ctx context.Context,
 	ids ...uuid.UUID,
 ) (collection.Collection[result.Result[models.Comment]], error) {
-	return mapRepoError(self.comment.GetCommentsById(ctx, ids...))
+	return mapRepoError(self.Comment.GetCommentsById(ctx, ids...))
 }
 
 func (self *Logic) GetCommentsByPostId(
@@ -70,7 +78,7 @@ func (self *Logic) GetCommentsByPostId(
 	order commsrv.CommentOrder,
 ) (collection.Collection[result.Result[models.Comment]], error) {
 	return mapRepoError(
-		self.comment.GetCommentsByPostId(
+		self.Comment.GetCommentsByPostId(
 			ctx,
 			postId,
 			mapCommentOrder(order),
@@ -84,7 +92,7 @@ func (self *Logic) GetCommentsByCommentId(
 	order commsrv.CommentOrder,
 ) (collection.Collection[result.Result[models.Comment]], error) {
 	return mapRepoError(
-		self.comment.GetCommentsByCommentId(
+		self.Comment.GetCommentsByCommentId(
 			ctx,
 			commentId,
 			mapCommentOrder(order),
@@ -99,7 +107,7 @@ func (self *Logic) CreatePostComment(
 	form commsrv.CommentForm,
 ) (models.Comment, error) {
 	var out models.Comment
-	_, err := mapRepoError(self.user.GetUsersById(ctx, userId))
+	_, err := mapRepoError(self.User.GetUsersById(ctx, userId))
 
 	if nil == err {
 		if "" == form.Content {
@@ -119,7 +127,7 @@ func (self *Logic) CreatePostComment(
 			Content:      form.Content,
 			CreationDate: time.Now(),
 		}
-		out, err = mapRepoError(self.comment.CreateCommentComment(ctx, out))
+		out, err = mapRepoError(self.Comment.CreatePostComment(ctx, out))
 	}
 
 	return out, err
@@ -132,7 +140,7 @@ func (self *Logic) CreateCommentComment(
 	form commsrv.CommentForm,
 ) (models.Comment, error) {
 	var out models.Comment
-	_, err := mapRepoError(self.user.GetUsersById(ctx, userId))
+	_, err := mapRepoError(self.User.GetUsersById(ctx, userId))
 
 	if nil == err {
 		if "" == form.Content {
@@ -152,7 +160,7 @@ func (self *Logic) CreateCommentComment(
 			Content:      form.Content,
 			CreationDate: time.Now(),
 		}
-		out, err = mapRepoError(self.comment.CreateCommentComment(ctx, out))
+		out, err = mapRepoError(self.Comment.CreateCommentComment(ctx, out))
 	}
 
 	return out, err
@@ -162,14 +170,14 @@ func (self *Logic) GetPosts(
 	ctx context.Context,
 	order postsrv.PostOrder,
 ) (collection.Collection[result.Result[models.Post]], error) {
-	return mapRepoError(self.post.GetPosts(ctx, mapPostOrder(order)))
+	return mapRepoError(self.Post.GetPosts(ctx, mapPostOrder(order)))
 }
 
 func (self *Logic) GetPostsById(
 	ctx context.Context,
 	ids ...uuid.UUID,
 ) (collection.Collection[result.Result[models.Post]], error) {
-	return mapRepoError(self.post.GetPostsById(ctx, ids...))
+	return mapRepoError(self.Post.GetPostsById(ctx, ids...))
 }
 
 func (self *Logic) CreatePost(
@@ -178,7 +186,7 @@ func (self *Logic) CreatePost(
 	form postsrv.PostCreationForm,
 ) (models.Post, error) {
 	var out models.Post
-	_, err := mapRepoError(self.user.GetUsersById(ctx, userId))
+	_, err := mapRepoError(self.User.GetUsersById(ctx, userId))
 
 	if nil == err {
 		if "" == form.Content {
@@ -206,7 +214,7 @@ func (self *Logic) CreatePost(
 			CommentsAllowed: form.AllowComments,
 			CreationDate:    time.Now(),
 		}
-		out, err = mapRepoError(self.post.CreatePost(ctx, out))
+		out, err = mapRepoError(self.Post.CreatePost(ctx, out))
 	}
 
 	return out, err
@@ -219,7 +227,7 @@ func (self *Logic) UpdatePost(
 ) (models.Post, error) {
 	var out models.Post
 
-	_, err := mapRepoError(self.user.GetUsersById(ctx, userId))
+	_, err := mapRepoError(self.User.GetUsersById(ctx, userId))
 
 	if nil == err && userId != post.AuthorId {
 		err = srverrors.Authorization(errors.New("Naive authorization"))
@@ -244,7 +252,7 @@ func (self *Logic) UpdatePost(
 	}
 
 	if nil == err {
-		out, err = mapRepoError(self.post.UpdatePost(ctx, post))
+		out, err = mapRepoError(self.Post.UpdatePost(ctx, post))
 	}
 
 	return out, err
@@ -254,6 +262,6 @@ func (self *Logic) GetUsersById(
 	ctx context.Context,
 	ids ...uuid.UUID,
 ) (collection.Collection[result.Result[models.User]], error) {
-	return mapRepoError(self.user.GetUsersById(ctx, ids...))
+	return mapRepoError(self.User.GetUsersById(ctx, ids...))
 }
 

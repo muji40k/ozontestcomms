@@ -27,8 +27,6 @@ type Repository struct {
 	mutex    sync.Mutex
 }
 
-type Initor[T any] func(T)
-
 func postOrder(order post.PostOrder) func(*time.Time, *time.Time) int {
 	switch order {
 	case post.POST_ORDER_DATE_ASC:
@@ -86,7 +84,7 @@ type Comment struct {
 	Target Target
 }
 
-func New(init func(Initor[models.User], Initor[Comment], Initor[models.Post])) Repository {
+func New(init func(func(models.User), func(Comment), func(models.Post))) *Repository {
 	users := make(map[uuid.UUID]models.User)
 	comments := make(map[uuid.UUID]models.Comment)
 	posts := make(map[uuid.UUID]models.Post)
@@ -119,7 +117,7 @@ func New(init func(Initor[models.User], Initor[Comment], Initor[models.Post])) R
 		)
 	}
 
-	return Repository{users, comments, posts, targets, sync.Mutex{}}
+	return &Repository{users, comments, posts, targets, sync.Mutex{}}
 }
 
 func (self *Repository) createComment(

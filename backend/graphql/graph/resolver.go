@@ -22,7 +22,7 @@ type Resolver struct {
 	services services
 }
 
-func New(
+func NewResolver(
 	user usrsrv.Service,
 	comment commsrv.Service,
 	post postsrv.Service,

@@ -19,11 +19,11 @@ func Apply[T any](
 		err = negativeLimit
 	}
 
-	if nil != err && nil != after {
+	if nil == err && nil != after {
 		err = col.After(*after)
 	}
 
-	if nil != err {
+	if nil == err {
 		col.Limit(uint(limit))
 	}
 
