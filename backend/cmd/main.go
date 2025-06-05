@@ -3,8 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/muji40k/ozontestcomms/builders/applications/graphql"
+	"github.com/muji40k/ozontestcomms/builders/services/domain"
 	"github.com/muji40k/ozontestcomms/internal/application"
+	"github.com/muji40k/ozontestcomms/internal/domain/models"
+	"github.com/muji40k/ozontestcomms/internal/repository/implementations/inmemory"
 	commrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/comment"
 	postrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/post"
 	usrrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/user"
@@ -65,32 +71,96 @@ func (self *Cleaner) Clear() {
 	}
 }
 
+func InMemoryRepositoryConstructor() (RepositoryContext, Clearable, error) {
+	repo := inmemory.New(
+		func(adduser func(models.User), _ func(inmemory.Comment), _ func(models.Post)) {
+			adduser(models.User{
+				Id:       uuid.MustParse("9c3d7dba-d1b2-42de-b708-158e32f11623"),
+				Email:    "aboba@mail.com",
+				Password: "asdf",
+			})
+		},
+	)
+
+	return RepositoryContext{repo, repo, repo}, nil, nil
+}
+
+func DomainServiceConstructor(rcontext *RepositoryContext) (ServiceContext, Clearable, error) {
+	svc, err := domain.NewLogicBuilder().
+		WithCommentRepository(rcontext.Comment).
+		WithPostRepository(rcontext.Post).
+		WithUserRepository(rcontext.User).
+		Build()
+
+	return ServiceContext{svc, svc, svc}, nil, err
+}
+
+type GraphqlAppConfig struct {
+	Host           string
+	Port           string
+	LoaderDuration time.Duration
+}
+
+const (
+	ENV_GRAPHQL_APP_HOST            string = "POSTER_GRAPHQL_HOST"
+	ENV_GRAPHQL_APP_PORT            string = "POSTER_GRAPHQL_PORT"
+	ENV_GRAPHQL_APP_LOADER_DURATION string = "POSTER_GRAPHQL_LOADER"
+)
+
+func GraphqlAppConfigEnvParser() (GraphqlAppConfig, error) {
+	host := getenvOr(ENV_GRAPHQL_APP_HOST, "0.0.0.0")
+	port := getenvOr(ENV_GRAPHQL_APP_PORT, "80")
+	var duration time.Duration
+	var err error
+	sduration := os.Getenv(ENV_GRAPHQL_APP_LOADER_DURATION)
+
+	if "" == sduration {
+		duration = time.Millisecond
+	} else {
+		duration, err = time.ParseDuration(sduration)
+	}
+
+	if nil != err {
+		return GraphqlAppConfig{}, err
+	} else {
+		return GraphqlAppConfig{host, port, duration}, nil
+	}
+}
+
+func GraphqlAppConstructor(
+	parser func() (GraphqlAppConfig, error),
+) func(*ServiceContext) (application.Application, error) {
+	return func(scontext *ServiceContext) (application.Application, error) {
+		var app application.Application
+		cfg, err := parser()
+
+		if nil == err {
+			app, err = graphql.NewServerBuilder().
+				WithHost(cfg.Host).
+				WithPort(cfg.Port).
+				WithLoaderDuration(cfg.LoaderDuration).
+				WithCommentService(scontext.Comment).
+				WithPostService(scontext.Post).
+				WithUserService(scontext.User).
+				Build()
+		}
+
+		return app, err
+	}
+}
+
 var repositoryConstructors = map[string]func() (RepositoryContext, Clearable, error){
-	"in-memory": nil,
+	"in-memory": InMemoryRepositoryConstructor,
 	"psql":      nil,
 }
 var serviceConstructors = map[string]func(*RepositoryContext) (ServiceContext, Clearable, error){
-	"domain": nil,
+	"domain": DomainServiceConstructor,
 }
 var appConstructors = map[string]func(*ServiceContext) (application.Application, error){
-	"graphql": nil,
+	"graphql": GraphqlAppConstructor(GraphqlAppConfigEnvParser),
 }
 
 func main() {
-	// repo := inmemory.New(
-	//     func(adduser func(models.User), _ func(inmemory.Comment), _ func(models.Post)) {
-	//         adduser(models.User{
-	//             Id:       uuid.MustParse("9c3d7dba-d1b2-42de-b708-158e32f11623"),
-	//             Email:    "aboba@mail.com",
-	//             Password: "asdf",
-	//         })
-	//     },
-	// )
-	// srv := logic.New(logic.Context{repo, repo, repo})
-	// app := graphql.New("0.0.0.0", "8080", time.Millisecond, graphql.Context{
-	//     srv, srv, srv,
-	// })
-
 	cleaner := NewCleaner()
 	defer cleaner.Clear()
 
