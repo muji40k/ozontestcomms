@@ -170,8 +170,8 @@ func main() {
 	var err error
 
 	rtype := getenvOr(ENV_REPOSITORY_TYPE, "in-memory")
-	stype := getenvOr(ENV_REPOSITORY_TYPE, "domain")
-	atype := getenvOr(ENV_REPOSITORY_TYPE, "graphql")
+	stype := getenvOr(ENV_SERVICE_TYPE, "domain")
+	atype := getenvOr(ENV_APPLICATION_TYPE, "graphql")
 
 	if rconstr, found := repositoryConstructors[rtype]; !found {
 		err = fmt.Errorf("Unknown repository type: %v", rtype)
