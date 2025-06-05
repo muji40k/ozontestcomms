@@ -14,6 +14,7 @@ import (
 	postrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/post"
 	usrrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/user"
 	srverrors "github.com/muji40k/ozontestcomms/internal/service/errors"
+	"github.com/muji40k/ozontestcomms/internal/service/helpers/singlewrap"
 	commsrv "github.com/muji40k/ozontestcomms/internal/service/interface/comment"
 	postsrv "github.com/muji40k/ozontestcomms/internal/service/interface/post"
 	"github.com/muji40k/ozontestcomms/misc/result"
@@ -77,13 +78,28 @@ func (self *Logic) GetCommentsByPostId(
 	postId uuid.UUID,
 	order commsrv.CommentOrder,
 ) (collection.Collection[result.Result[models.Comment]], error) {
-	return mapRepoError(
-		self.Comment.GetCommentsByPostId(
-			ctx,
-			postId,
-			mapCommentOrder(order),
-		),
+	var post models.Post
+	res, err := singlewrap.Unwrap(
+		mapRepoError(self.Post.GetPostsById(ctx, postId)),
 	)
+
+	if nil == err {
+		post, err = res.Unwrap()
+	}
+
+	if nil != err {
+		return nil, err
+	} else if !post.CommentsAllowed {
+		return collection.EmptyCollection[result.Result[models.Comment]](), nil
+	} else {
+		return mapRepoError(
+			self.Comment.GetCommentsByPostId(
+				ctx,
+				postId,
+				mapCommentOrder(order),
+			),
+		)
+	}
 }
 
 func (self *Logic) GetCommentsByCommentId(
@@ -107,7 +123,23 @@ func (self *Logic) CreatePostComment(
 	form commsrv.CommentForm,
 ) (models.Comment, error) {
 	var out models.Comment
+	var post models.Post
 	_, err := mapRepoError(self.User.GetUsersById(ctx, userId))
+
+	if nil == err {
+		var res result.Result[models.Post]
+		res, err = singlewrap.Unwrap(
+			mapRepoError(self.Post.GetPostsById(ctx, postId)),
+		)
+
+		if nil == err {
+			post, err = res.Unwrap()
+		}
+	}
+
+	if nil == err && !post.CommentsAllowed {
+		err = srverrors.Violation("comments to selected post are not allowed")
+	}
 
 	if nil == err {
 		if "" == form.Content {

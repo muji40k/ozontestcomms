@@ -8,6 +8,7 @@ type ErrorInternal struct{ Err error }
 type ErrorEmpty struct{ What []string }
 type ErrorIncorrect struct{ What []string }
 type ErrorNotFound struct{ What []string }
+type ErrorViolation struct{ What []string }
 type ErrorDataAccess struct{ Err error }
 type ErrorIterEmpty struct{}
 type ErrorIterMultiple struct{}
@@ -35,6 +36,10 @@ func Incorrect(what ...string) ErrorIncorrect {
 
 func NotFound(what ...string) ErrorNotFound {
 	return ErrorNotFound{what}
+}
+
+func Violation(what ...string) ErrorViolation {
+	return ErrorViolation{what}
 }
 
 func DataAccess(err error) ErrorDataAccess {
@@ -84,6 +89,10 @@ func (e ErrorIncorrect) Error() string {
 
 func (e ErrorNotFound) Error() string {
 	return fmt.Sprintf("Not found: %v", e.What)
+}
+
+func (e ErrorViolation) Error() string {
+	return fmt.Sprintf("Action violates rules: %v", e.What)
 }
 
 func (e ErrorDataAccess) Error() string {
