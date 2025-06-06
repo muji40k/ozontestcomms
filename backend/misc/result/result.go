@@ -12,6 +12,16 @@ func Ok[T any](value T) Result[T] {
 	}
 }
 
+func OkMapper[T any, F any](f func(*T) F) func(*Result[T]) Result[F] {
+	return func(res *Result[T]) Result[F] {
+		if v, err := res.Unwrap(); nil == err {
+			return Ok(f(&v))
+		} else {
+			return Err[F](err)
+		}
+	}
+}
+
 func Err[T any](err error) Result[T] {
 	return Result[T]{
 		Error: err,

@@ -7,10 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/muji40k/ozontestcomms/builders/applications/graphql"
+	psqlbuilder "github.com/muji40k/ozontestcomms/builders/repositories/psql"
 	"github.com/muji40k/ozontestcomms/builders/services/domain"
 	"github.com/muji40k/ozontestcomms/internal/application"
 	"github.com/muji40k/ozontestcomms/internal/domain/models"
 	"github.com/muji40k/ozontestcomms/internal/repository/implementations/inmemory"
+	"github.com/muji40k/ozontestcomms/internal/repository/implementations/psql"
 	commrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/comment"
 	postrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/post"
 	usrrepo "github.com/muji40k/ozontestcomms/internal/repository/interface/user"
@@ -85,6 +87,56 @@ func InMemoryRepositoryConstructor() (RepositoryContext, Clearable, error) {
 	return RepositoryContext{repo, repo, repo}, nil, nil
 }
 
+type PSQLRepositoryConfig struct {
+	Host     string
+	Port     string
+	DBName   string
+	User     string
+	Password string
+}
+
+const (
+	ENV_PSQL_REPO_HOST     string = "POSTER_PSQL_HOST"
+	ENV_PSQL_REPO_PORT     string = "POSTER_PSQL_PORT"
+	ENV_PSQL_REPO_DB       string = "POSTER_PSQL_DBNAME"
+	ENV_PSQL_REPO_USER     string = "POSTER_PSQL_USER"
+	ENV_PSQL_REPO_PASSWORD string = "POSTER_PSQL_PASSWORD"
+)
+
+func PSQLRepositoryConfigEnvParser() (PSQLRepositoryConfig, error) {
+	return PSQLRepositoryConfig{
+		Host:     getenvOr(ENV_PSQL_REPO_HOST, "127.0.0.1"),
+		Port:     getenvOr(ENV_PSQL_REPO_PORT, "5432"),
+		DBName:   getenvOr(ENV_PSQL_REPO_DB, "poster"),
+		User:     getenvOr(ENV_PSQL_REPO_USER, "postgres"),
+		Password: getenvOr(ENV_PSQL_REPO_PASSWORD, "postgres"),
+	}, nil
+}
+
+func PSQLRepositoryConstructor(parser func() (PSQLRepositoryConfig, error)) func() (RepositoryContext, Clearable, error) {
+	return func() (RepositoryContext, Clearable, error) {
+		var repo *psql.Repository
+		var clr func()
+		cfg, err := parser()
+
+		if nil == err {
+			repo, clr, err = psqlbuilder.NewRepositoryBuilder().
+				WithHost(cfg.Host).
+				WithPort(cfg.Port).
+				WithDbname(cfg.DBName).
+				WithUser(cfg.User).
+				WithPassword(cfg.Password).
+				Build()
+		}
+
+		if nil == err {
+			return RepositoryContext{repo, repo, repo}, FCleaner(clr), nil
+		} else {
+			return RepositoryContext{}, nil, err
+		}
+	}
+}
+
 func DomainServiceConstructor(rcontext *RepositoryContext) (ServiceContext, Clearable, error) {
 	svc, err := domain.NewLogicBuilder().
 		WithCommentRepository(rcontext.Comment).
@@ -151,7 +203,7 @@ func GraphqlAppConstructor(
 
 var repositoryConstructors = map[string]func() (RepositoryContext, Clearable, error){
 	"in-memory": InMemoryRepositoryConstructor,
-	"psql":      nil,
+	"psql":      PSQLRepositoryConstructor(PSQLRepositoryConfigEnvParser),
 }
 var serviceConstructors = map[string]func(*RepositoryContext) (ServiceContext, Clearable, error){
 	"domain": DomainServiceConstructor,
@@ -169,7 +221,7 @@ func main() {
 	var app application.Application
 	var err error
 
-	rtype := getenvOr(ENV_REPOSITORY_TYPE, "in-memory")
+	rtype := getenvOr(ENV_REPOSITORY_TYPE, "psql")
 	stype := getenvOr(ENV_SERVICE_TYPE, "domain")
 	atype := getenvOr(ENV_APPLICATION_TYPE, "graphql")
 

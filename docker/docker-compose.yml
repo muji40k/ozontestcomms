@@ -12,6 +12,11 @@ services:
     environment:
       POSTER_REPOSITORY_TYPE: ${POSTER_REPOSITORY_TYPE}
       POSTER_APPLICATION_TYPE: ${POSTER_APPLICATION_TYPE}
+      POSTER_PSQL_HOST: postgresql_db
+      POSTER_PSQL_PORT: 5432
+      POSTER_PSQL_DBNAME: poster
+      POSTER_PSQL_USER: ${DB_USER}
+      POSTER_PSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${HOST}:${PORT}:80"
     volumes:
