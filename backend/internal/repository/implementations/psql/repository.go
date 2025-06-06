@@ -295,7 +295,7 @@ func (self *Repository) getCommentsByTarget(
 	targetId uuid.UUID,
 	order comment.CommentOrder,
 ) (collection.Collection[result.Result[models.Comment]], error) {
-	sort := mapCommentOrder(order)
+	sort, rel := mapCommentOrder(order)
 
 	return collection.Map(newCollection[Comment](
 		func(
@@ -313,11 +313,11 @@ func (self *Repository) getCommentsByTarget(
 
 			nullable.IfSome(after, func(id *uuid.UUID) {
 				fmt.Fprintf(&builder, `
-                        and comments.creation_date >= (
+                        and comments.creation_date %v (
                             select creation_date
                             from comments.comments
                             where comments.id = $%v
-                        ) and comments.id != $%v`, cnt, cnt+1)
+                        ) and comments.id != $%v`, rel, cnt, cnt+1)
 				cnt += 2
 				args = append(args, *id, *id)
 			})
@@ -464,7 +464,7 @@ func (self *Repository) GetPosts(
 	ctx context.Context,
 	order post.PostOrder,
 ) (collection.Collection[result.Result[models.Post]], error) {
-	sort := mapPostOrder(order)
+	sort, rel := mapPostOrder(order)
 
 	return collection.Map(newCollection[Post](
 		func(
@@ -484,11 +484,11 @@ func (self *Repository) GetPosts(
 
 			nullable.IfSome(after, func(id *uuid.UUID) {
 				fmt.Fprintf(&builder, `
-                        where posts.creation_date >= (
+                        where posts.creation_date %v (
                             select creation_date
                             from posts.posts
                             where posts.id = $%v
-                        ) and posts.id != $%v`, cnt, cnt+1)
+                        ) and posts.id != $%v`, rel, cnt, cnt+1)
 				cnt += 2
 				args = append(args, *id, *id)
 			})

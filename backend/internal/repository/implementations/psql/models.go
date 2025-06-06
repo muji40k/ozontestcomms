@@ -174,23 +174,23 @@ func mapQPost(value *qPost) models.Post {
 	}
 }
 
-func mapCommentOrder(order comment.CommentOrder) string {
+func mapCommentOrder(order comment.CommentOrder) (string, string) {
 	switch order {
 	case comment.COMMENT_ORDER_DATE_ASC:
-		return "asc"
+		return "asc", ">="
 	case comment.COMMENT_ORDER_DATE_DESC:
-		return "desc"
+		return "desc", "<="
 	default:
 		panic("Unknown variant")
 	}
 }
 
-func mapPostOrder(order post.PostOrder) string {
+func mapPostOrder(order post.PostOrder) (string, string) {
 	switch order {
 	case post.POST_ORDER_DATE_ASC:
-		return "asc"
+		return "asc", ">="
 	case post.POST_ORDER_DATE_DESC:
-		return "desc"
+		return "desc", "<="
 	default:
 		panic("Unknown variant")
 	}
