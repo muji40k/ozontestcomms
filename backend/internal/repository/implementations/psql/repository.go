@@ -117,7 +117,7 @@ func getPost(
 	return out, err
 }
 
-func generateOrder(start int, ids []uuid.UUID) string {
+func generateOrder(ids []uuid.UUID) string {
 	order := make([]string, len(ids))
 
 	for i, id := range ids {
@@ -277,7 +277,7 @@ func (self *Repository) GetCommentsById(
 		stmt, err := self.db.PreparexContext(ctx, `
             select comments.*, orderer.ord
             from comments.comments
-            right outer join (values `+generateOrder(1, ids)+`) as orderer (id, ord)
+            right outer join (values `+generateOrder(ids)+`) as orderer (id, ord)
                 on comments.id = orderer.id
             order by orderer.ord
         `)
@@ -402,7 +402,7 @@ func (self *Repository) GetUsersById(
 		stmt, err := self.db.PreparexContext(ctx, `
             select users.*, orderer.ord
             from users.users
-            right outer join (values `+generateOrder(1, ids)+`) as orderer (id, ord)
+            right outer join (values `+generateOrder(ids)+`) as orderer (id, ord)
                 on users.id = orderer.id
             order by orderer.ord
         `)
@@ -533,7 +533,7 @@ func (self *Repository) GetPostsById(
             from (
                 select posts.*, orderer.ord
                 from posts.posts
-                right outer join (values `+generateOrder(1, ids)+`) as orderer (id, ord)
+                right outer join (values `+generateOrder(ids)+`) as orderer (id, ord)
                     on posts.id = orderer.id
             ) as filtered
             left outer join commentables.commentables
