@@ -14,3 +14,9 @@ backend:
 	-docker compose --env-file=.env -f docker/docker-compose.yml up postgresql_db backend
 	docker compose --env-file=.env -f docker/docker-compose.yml down
 
+.PHONY: tests
+tests:
+	docker compose --env-file=.env -f docker/docker-compose.yml build $(BACKEND_BUILD_FLAGS)
+	-docker compose --env-file=.env -f docker/docker-compose.yml up tests
+	docker compose --env-file=.env -f docker/docker-compose.yml down
+

@@ -42,6 +42,13 @@ services:
       timeout: 5s
       retries: 5
 
+  tests:
+    build:
+      context: ../backend/
+      dockerfile: ./Dockerfile.tests
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+
 volumes:
   database-volume:
 
