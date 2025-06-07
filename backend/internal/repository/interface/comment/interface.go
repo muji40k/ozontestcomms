@@ -9,6 +9,8 @@ import (
 	"github.com/muji40k/ozontestcomms/misc/result"
 )
 
+//go:generate mockgen -source=interface.go -destination=../../implementations/mock/comment/repository.go
+
 type CommentOrder uint
 
 const (

@@ -10,6 +10,8 @@ import (
 	"github.com/muji40k/ozontestcomms/misc/result"
 )
 
+//go:generate mockgen -source=interface.go -destination=../../mock/post/service.go
+
 type Service interface {
 	GetPosts(ctx context.Context, order PostOrder) (collection.Collection[result.Result[models.Post]], error)
 	GetPostsById(ctx context.Context, ids ...uuid.UUID) (collection.Collection[result.Result[models.Post]], error)

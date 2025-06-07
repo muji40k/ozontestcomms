@@ -9,6 +9,8 @@ import (
 	"github.com/muji40k/ozontestcomms/misc/result"
 )
 
+//go:generate mockgen -source=interface.go -destination=../../implementations/mock/user/repository.go
+
 type Repository interface {
 	GetUsersById(ctx context.Context, ids ...uuid.UUID) (collection.Collection[result.Result[models.User]], error)
 }
